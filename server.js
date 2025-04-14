@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const connectDB = require("./config/db"); 
-
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profile");
 const productosRoutes = require("./routes/productos");
@@ -13,11 +12,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configurar middleware para servir archivos estáticos
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-// Si tienes una carpeta public para otros archivos estáticos
 app.use(express.static(path.join(__dirname, "public")));
-
 connectDB();
 
 app.use("/api/auth", authRoutes);

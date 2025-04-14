@@ -3,6 +3,7 @@ const router = express.Router();
 const { db } = require('../config/db');
 const authenticateToken = require('../middleware/auth');
 
+//obtner usuario
 router.get('/', authenticateToken, async (req, res) => {
     try {
       const usersSnapshot = await db.collection('users').get();
@@ -23,7 +24,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
   });
 
-  
+  // obtner un usuario
 router.get('/obtener/:id', authenticateToken, async (req, res) => {
     try {
       const userId = req.params.id;
@@ -87,7 +88,7 @@ router.get('/obtener/:id', authenticateToken, async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   });
-  
+  //modifca usuario
   router.put('/update/:id', authenticateToken,  async (req, res) => {
     try {
       const userId = req.params.id;

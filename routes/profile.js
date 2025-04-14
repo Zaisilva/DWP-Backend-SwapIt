@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User'); // Importar el modelo Mongoose
+const User = require('../models/User'); 
 const authenticateToken = require('../middleware/auth');
-const bcrypt = require('bcryptjs'); // Usar bcryptjs para ser consistente con auth.js
+const bcrypt = require('bcryptjs');
 
 // Get user profile
 router.get('/', authenticateToken, async (req, res) => {

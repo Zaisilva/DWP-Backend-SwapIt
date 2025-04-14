@@ -19,7 +19,6 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${Math.round(Math.random() * 1E9)}-${file.originalname}`);
   }
 });
-
 const upload = multer({ 
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
@@ -34,8 +33,7 @@ const upload = multer({
     cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, webp)'));
   }
 });
-
-router.get('/', async (req, res) => {
+router.get('/',auth, async (req, res) => {
   try {
     const productos = await Producto.find({ disponible: true })
       .populate('usuario', 'nombre email')
@@ -46,9 +44,8 @@ router.get('/', async (req, res) => {
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
-
 // Obtener un producto específico
-router.get('/:id', async (req, res) => {
+router.get('/:id',auth, async (req, res) => {
   try {
     const producto = await Producto.findById(req.params.id)
       .populate({
@@ -76,7 +73,8 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
-    router.post('/', auth, upload.array('imagenes', 5), async (req, res) => {
+// crear un produto
+router.post('/', auth, upload.array('imagenes', 5), async (req, res) => {
         try {
         console.log("Request Body:", req.body);
         
@@ -127,8 +125,7 @@ router.get('/:id', async (req, res) => {
         console.error('Error al crear producto:', error);
         res.status(500).json({ mensaje: 'Error al crear el producto' });
         }
-    });
-
+});
 // Actualizar un producto (solo el propietario)
 router.put('/:id', auth, upload.array('nuevasImagenes', 5), async (req, res) => {
   try {
@@ -190,36 +187,6 @@ router.put('/:id', auth, upload.array('nuevasImagenes', 5), async (req, res) => 
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
-
-// Marcar un producto como no disponible (trueque completado)
-router.patch('/:id/completar', auth, async (req, res) => {
-  try {
-    const producto = await Producto.findById(req.params.id);
-    
-    if (!producto) {
-      return res.status(404).json({ mensaje: 'Producto no encontrado' });
-    }
-    
-    // Verificar que el usuario es el propietario
-    if (producto.usuario.toString() !== req.user.id) {
-      return res.status(403).json({ mensaje: 'No autorizado' });
-    }
-    
-    producto.disponible = false;
-    producto.fechaTrueque = new Date();
-    
-    if (req.body.productoIntercambiado) {
-      producto.productoIntercambiado = req.body.productoIntercambiado;
-    }
-    
-    await producto.save();
-    res.json(producto);
-  } catch (error) {
-    console.error('Error al completar trueque:', error);
-    res.status(500).json({ mensaje: 'Error del servidor' });
-  }
-});
-
 // Eliminar un producto (solo el propietario)
 router.delete('/:id', auth, async (req, res) => {
   try {
@@ -255,7 +222,6 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
-
 // Obtener productos por usuario
 router.get('/usuario/:userId', async (req, res) => {
   try {
@@ -269,7 +235,6 @@ router.get('/usuario/:userId', async (req, res) => {
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
-
 // Buscar productos por nombre
 router.get('/buscar/nombre/:nombre', async (req, res) => {
   try {
@@ -286,7 +251,6 @@ router.get('/buscar/nombre/:nombre', async (req, res) => {
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
-
 // Buscar productos
 router.get('/buscar/filtro', async (req, res) => {
   try {
@@ -319,6 +283,8 @@ router.get('/buscar/filtro', async (req, res) => {
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
+
+
 
 // Obtener comentarios de un producto
 router.get('/:id/comentarios', async (req, res) => {

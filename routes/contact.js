@@ -2,19 +2,17 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 
-// Configure email transporter
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
-  secure: true, // use SSL
+  secure: true, 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_APP_PASSWORD
   },
-  debug: true // Enable debug output
+  debug: true 
 });
 
-// Contact form endpoint
 router.post('/', async (req, res) => {
   try {
     const { name, email, message } = req.body;
