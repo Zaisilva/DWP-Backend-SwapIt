@@ -7,22 +7,24 @@ const ComentarioSchema = new Schema({
     ref: 'Producto',
     required: true
   },
-  usuario: {
-    type: Schema.Types.ObjectId,
-    ref: 'Usuario',
-    required: true
-  },
+  // En Comentario.js verifica que la referencia sea correcta
+usuario: {
+  type: Schema.Types.ObjectId,
+  ref: 'User', // Debe coincidir exactamente con el nombre del modelo
+  required: true
+},
   texto: {
     type: String,
     required: true,
     trim: true
   },
   respuestas: [{
-    usuario: {
-      type: Schema.Types.ObjectId,
-      ref: 'Usuario',
-      required: true
-    },
+    // En Comentario.js verifica que la referencia sea correcta
+usuario: {
+  type: Schema.Types.ObjectId,
+  ref: 'User', // Debe coincidir exactamente con el nombre del modelo
+  required: true
+},
     texto: {
       type: String,
       required: true,

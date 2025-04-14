@@ -130,6 +130,7 @@ router.get('/:id', async (req, res) => {
     });
 
 // Actualizar un producto (solo el propietario)
+// Actualizar un producto (solo el propietario)
 router.put('/:id', auth, upload.array('nuevasImagenes', 5), async (req, res) => {
   try {
     const producto = await Producto.findById(req.params.id);
@@ -138,59 +139,89 @@ router.put('/:id', auth, upload.array('nuevasImagenes', 5), async (req, res) => 
       return res.status(404).json({ mensaje: 'Producto no encontrado' });
     }
     
+    // Modificar esta línea para usar userId o id
+  // Modificar esta línea en cada ruta relevante
+const usuarioId = req.user.userId || req.user.id;
+    
     // Verificar que el usuario es el propietario
-    if (producto.usuario.toString() !== req.user.id) {
+    if (producto.usuario.toString() !== usuarioId) {
       return res.status(403).json({ mensaje: 'No autorizado para editar este producto' });
     }
     
-    // Preparar datos de actualización
-    const datosActualizados = {
-      titulo: req.body.titulo,
-      descripcion: req.body.descripcion,
-      categoria: req.body.categoria,
-      estado: req.body.estado,
-      intercambioPor: req.body.intercambioPor,
-      ubicacion: {
-        ciudad: req.body['ubicacion[ciudad]'],
-        estado: req.body['ubicacion[estado]'],  // Cambiado de provincia a estado
-        codigoPostal: req.body['ubicacion[codigoPostal]'] || ''
-      }
-    };
-    
-    // Manejo de imágenes
-    let imagenes = [];
-    
-    // Mantener imágenes existentes que no se eliminaron
-    if (req.body.imagenesExistentes) {
-      try {
-        const imagenesExistentes = JSON.parse(req.body.imagenesExistentes);
-        imagenes = [...imagenesExistentes];
-      } catch (e) {
-        console.error('Error al parsear imagenesExistentes:', e);
-      }
-    }
-    
-    // Añadir nuevas imágenes
-    if (req.files && req.files.length > 0) {
-      const nuevasImagenes = req.files.map(file => `/uploads/productos/${file.filename}`);
-      imagenes = [...imagenes, ...nuevasImagenes];
-    }
-    
-    datosActualizados.imagenes = imagenes;
-    
-    const productoActualizado = await Producto.findByIdAndUpdate(
-      req.params.id,
-      datosActualizados,
-      { new: true }
-    );
-    
-    res.json(productoActualizado);
+    // Resto del código...
   } catch (error) {
     console.error('Error al actualizar producto:', error);
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
 
+// Marcar un producto como no disponible (trueque completado)
+// Marcar un producto como no disponible (trueque completado)
+router.patch('/:id/completar', auth, async (req, res) => {
+  try {
+    const producto = await Producto.findById(req.params.id);
+    
+    if (!producto) {
+      return res.status(404).json({ mensaje: 'Producto no encontrado' });
+    }
+    
+    // Modificar esta línea para usar userId o id
+    const usuarioId = req.user.userId || req.user.id;
+    
+    // Verificar que el usuario es el propietario
+    if (producto.usuario.toString() !== usuarioId) {
+      return res.status(403).json({ mensaje: 'No autorizado' });
+    }
+    
+    producto.disponible = false;
+    producto.fechaTrueque = new Date();
+    
+    if (req.body.productoIntercambiado) {
+      producto.productoIntercambiado = req.body.productoIntercambiado;
+    }
+    
+    await producto.save();
+    
+    // Incrementar el contador de cambios del usuario
+    await User.findByIdAndUpdate(
+      usuarioId,
+      { $inc: { cambios: 1 } }, // Incrementar el campo 'cambios' en 1
+      { new: true }
+    );
+    
+    res.json(producto);
+  } catch (error) {
+    console.error('Error al completar trueque:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+});
+// Eliminar un producto (solo el propietario)
+// Eliminar un producto (solo el propietario)
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const producto = await Producto.findById(req.params.id);
+    
+    if (!producto) {
+      return res.status(404).json({ mensaje: 'Producto no encontrado' });
+    }
+    
+    // Modificar esta línea para usar userId o id
+    const usuarioId = req.user.userId || req.user.id;
+    
+    // Verificar que el usuario es el propietario
+    if (producto.usuario.toString() !== usuarioId) {
+      return res.status(403).json({ mensaje: 'No autorizado para eliminar este producto' });
+    }
+    
+    // Resto del código...
+    
+    await Producto.findByIdAndDelete(req.params.id);
+    res.json({ mensaje: 'Producto eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar producto:', error);
+    res.status(500).json({ mensaje: 'Error del servidor' });
+  }
+});
 // Marcar un producto como no disponible (trueque completado)
 router.patch('/:id/completar', auth, async (req, res) => {
   try {
@@ -212,46 +243,19 @@ router.patch('/:id/completar', auth, async (req, res) => {
       producto.productoIntercambiado = req.body.productoIntercambiado;
     }
     
+    // Guardar el producto actualizado
     await producto.save();
+    
+    // Incrementar el contador de cambios del usuario
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $inc: { cambios: 1 } }, // Incrementar el campo 'cambios' en 1
+      { new: true }
+    );
+    
     res.json(producto);
   } catch (error) {
     console.error('Error al completar trueque:', error);
-    res.status(500).json({ mensaje: 'Error del servidor' });
-  }
-});
-
-// Eliminar un producto (solo el propietario)
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const producto = await Producto.findById(req.params.id);
-    
-    if (!producto) {
-      return res.status(404).json({ mensaje: 'Producto no encontrado' });
-    }
-    
-    // Verificar que el usuario es el propietario
-    if (producto.usuario.toString() !== req.user.id) {
-      return res.status(403).json({ mensaje: 'No autorizado para eliminar este producto' });
-    }
-    
-    // Opcional: Eliminar las imágenes asociadas del servidor
-    if (producto.imagenes && producto.imagenes.length > 0) {
-      producto.imagenes.forEach(imagenUrl => {
-        try {
-          const ruta = path.join(__dirname, '..', 'public', imagenUrl);
-          if (fs.existsSync(ruta)) {
-            fs.unlinkSync(ruta);
-          }
-        } catch (err) {
-          console.error('Error al eliminar imagen:', err);
-        }
-      });
-    }
-    
-    await Producto.findByIdAndDelete(req.params.id);
-    res.json({ mensaje: 'Producto eliminado correctamente' });
-  } catch (error) {
-    console.error('Error al eliminar producto:', error);
     res.status(500).json({ mensaje: 'Error del servidor' });
   }
 });
@@ -344,9 +348,12 @@ router.post('/:id/comentarios', auth, async (req, res) => {
       return res.status(404).json({ mensaje: 'Producto no encontrado' });
     }
     
+    // Modifica esta línea para usar userId en lugar de id (o ambos)
+    const userId = req.user.userId || userId;
+    
     const nuevoComentario = new Comentario({
       producto: req.params.id,
-      usuario: req.user.id,
+      usuario: userId,
       texto: req.body.texto
     });
     
@@ -373,7 +380,7 @@ router.post('/comentarios/:comentarioId/respuestas', auth, async (req, res) => {
     }
     
     const nuevaRespuesta = {
-      usuario: req.user.id,
+      usuario: userId,
       texto: req.body.texto,
       fecha: new Date()
     };
@@ -394,24 +401,37 @@ router.post('/comentarios/:comentarioId/respuestas', auth, async (req, res) => {
 });
 
 // Eliminar un comentario (solo el propietario o admin)
+// Eliminar un comentario (solo el propietario o admin)
 router.delete('/comentarios/:comentarioId', auth, async (req, res) => {
   try {
+    console.log('Intentando eliminar comentario ID:', req.params.comentarioId);
+    console.log('Usuario autenticado:', req.user);
+    
     const comentario = await Comentario.findById(req.params.comentarioId);
     
     if (!comentario) {
       return res.status(404).json({ mensaje: 'Comentario no encontrado' });
     }
     
+    // Obtener el ID del usuario desde cualquiera de las dos posibles propiedades
+    const userId = req.user.userId || req.user.id;
+    console.log('ID de usuario del token:', userId);
+    console.log('ID de usuario del comentario:', comentario.usuario.toString());
+    
     // Verificar que el usuario es el propietario del comentario
-    if (comentario.usuario.toString() !== req.user.id) {
+    if (comentario.usuario.toString() !== userId) {
       return res.status(403).json({ mensaje: 'No autorizado para eliminar este comentario' });
     }
     
     await Comentario.findByIdAndDelete(req.params.comentarioId);
     res.json({ mensaje: 'Comentario eliminado correctamente' });
   } catch (error) {
-    console.error('Error al eliminar comentario:', error);
-    res.status(500).json({ mensaje: 'Error del servidor' });
+    console.error('Error detallado al eliminar comentario:', error);
+    res.status(500).json({ 
+      mensaje: 'Error del servidor', 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 });
 
@@ -432,7 +452,7 @@ router.delete('/comentarios/:comentarioId/respuestas/:respuestaId', auth, async 
     }
     
     // Verificar que el usuario es el propietario de la respuesta
-    if (respuesta.usuario.toString() !== req.user.id) {
+    if (respuesta.usuario.toString() !== userId) {
       return res.status(403).json({ mensaje: 'No autorizado para eliminar esta respuesta' });
     }
     
